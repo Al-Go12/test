@@ -1,0 +1,48 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# === Django ===
+*.log
+*.pot
+*.pyc
+media/
+staticfiles/
+
+# Local settings (don’t track secrets in code)
+.env
+*.local
+settings_local.py
+
+# === Virtual environment ===
+venv/
+ENV/
+env/
+.venv/
+
+# === IDEs & Editors ===
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === OS Specific ===
+.DS_Store
+Thumbs.db
+
+# === Coverage & Testing ===
+.coverage
+coverage.xml
+*.cover
+htmlcov/
+
+# === Migrations (optional: keep if you want history clean) ===
+# Uncomment this if you don’t want migration files in git
+# */migrations/*.py
+# !*/migrations/__init__.py
