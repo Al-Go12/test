@@ -135,13 +135,14 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    "DEFAULT_AUTHENTICATION_CLASSES": ( 
+        "accounts.authentication.CookieJWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication"
     )
 } 
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=50),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
@@ -175,6 +176,5 @@ CASHFREE_SECRET_KEY = config("CASHFREE_SECRET_KEY")
 CASHFREE_API_VERSION = config("CASHFREE_API_VERSION")
 
 # === Twilio ===
-TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
-TWILIO_FROM = config("TWILIO_FROM")
+FAST2SMS_API_KEY = config("FAST2SMS_API_KEY")
+

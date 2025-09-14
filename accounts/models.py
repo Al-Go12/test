@@ -1,10 +1,11 @@
-# models.py
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import (
+    AbstractBaseUser, BaseUserManager, PermissionsMixin
+)
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
-import uuid 
 from django.utils import timezone
 import random
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -12,10 +13,11 @@ class UserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
         if not phone_number:
             raise ValueError('The Phone Number must be set')
-        
-        # Normalize phone number if needed
+        if not password:
+            raise ValueError('The Password must be set')
+
         user = self.model(phone_number=phone_number, **extra_fields)
-        user.set_password(password)
+        user.set_password(password)  # securely hashes password
         user.save(using=self._db)
         return user
 
@@ -29,21 +31,24 @@ class UserManager(BaseUserManager):
             raise ValueError('Superuser must have is_staff=True.')
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
-        
+
         return self.create_user(phone_number, password, **extra_fields)
 
-class User(AbstractUser):
-    username = None  # Remove username field
+
+class User(AbstractBaseUser, PermissionsMixin):  # ✅ use AbstractBaseUser instead of AbstractUser
     phone_number = PhoneNumberField(unique=True, region="IN")
     is_phone_verified = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = "phone_number"
-    REQUIRED_FIELDS = []  # Empty since phone_number is the USERNAME_FIELD
+    REQUIRED_FIELDS = []  # No extra required fields
 
-    objects = UserManager()  # Use custom manager
+    objects = UserManager()
 
     def __str__(self):
         return str(self.phone_number)
+
 
 class OTP(models.Model):
     mobile = models.CharField(max_length=15, db_index=True)
@@ -56,4 +61,6 @@ class OTP(models.Model):
 
     @staticmethod
     def generate_otp():
-        return str(random.randint(1000, 9999))
+        return str(random.randint(123456, 999999))
+
+

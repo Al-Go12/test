@@ -19,13 +19,26 @@ class VerifyOtpSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "phone_number", "is_phone_verified"] 
-        
+        fields = ["id", "phone_number", "is_phone_verified"]  
+
+class RegistrationProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Registration
+        fields = "__all__"   
 class ProfileSerializer(serializers.ModelSerializer):
+    registration = serializers.SerializerMethodField()
+
     class Meta:
         model = Profile
         exclude = ["user", "created_at", "updated_at"]
 
+    def get_registration(self, obj):
+        registration = getattr(obj, "registration", None)  # handle if missing
+        if not registration:
+            # fallback if no related object exists
+            return None
+        return RegistrationProfileSerializer(registration).data
 class RegistrationSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer()
 

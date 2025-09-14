@@ -113,7 +113,7 @@ class UserApplicationAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Registration.DoesNotExist:
             return Response(
-                {"error": "No application found"},
+                {"status":False,"error": "No application found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -265,7 +265,7 @@ class AdminProfileExportExcelView(APIView):
 
         # Header row
         headers = [
-             "Full Name", "Aadhaar Number", "PAN Number", "Bank Name",
+             "Full Name", "Loan Type","Loan Amount","Aadhaar Number", "PAN Number", "Bank Name",
             "Account Number", "IFSC Code", "Full Address", "Contact Number",
             "Alternative Contact Number", "City", "PIN Code", "State"
         ]
@@ -281,25 +281,27 @@ class AdminProfileExportExcelView(APIView):
             cell.fill = openpyxl.styles.PatternFill(start_color=header_fill_color, end_color=header_fill_color, fill_type="solid")
 
         # Set column widths
-        column_widths = [6, 20, 18, 14, 18, 20, 14, 40, 15, 18, 15, 10, 15,]
+        column_widths = [6,10,10,20, 18, 14, 18, 20, 14, 40, 15, 18, 15, 10, 15,]
         for i, width in enumerate(column_widths, 1):
             ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = width
 
         # Data rows
         for row_idx, p in enumerate(profiles, 2):
            
-            ws.cell(row=row_idx, column=1, value=p.full_name)
-            ws.cell(row=row_idx, column=2, value=p.aadhaar_number)
-            ws.cell(row=row_idx, column=3, value=p.pan_number)
-            ws.cell(row=row_idx, column=4, value=p.bank_name)
-            ws.cell(row=row_idx, column=5, value=p.account_number)
-            ws.cell(row=row_idx, column=6, value=p.ifsc_code)
-            ws.cell(row=row_idx, column=7, value=p.full_address)
-            ws.cell(row=row_idx, column=8, value=p.contact_number or "")
-            ws.cell(row=row_idx, column=9, value=p.alternative_contact_number or "")
-            ws.cell(row=row_idx, column=10, value=p.city)
-            ws.cell(row=row_idx, column=11, value=p.pin_code)
-            ws.cell(row=row_idx, column=12, value=p.state)
+            ws.cell(row=row_idx, column=1, value=p.full_name) 
+            ws.cell(row=row_idx, column=2, value=p.loan_type)
+            ws.cell(row=row_idx, column=3, value=p.loan_amount)
+            ws.cell(row=row_idx, column=4, value=p.aadhaar_number)
+            ws.cell(row=row_idx, column=5, value=p.pan_number)
+            ws.cell(row=row_idx, column=6, value=p.bank_name)
+            ws.cell(row=row_idx, column=7, value=p.account_number)
+            ws.cell(row=row_idx, column=8, value=p.ifsc_code)
+            ws.cell(row=row_idx, column=9, value=p.full_address)
+            ws.cell(row=row_idx, column=10, value=p.contact_number or "")
+            ws.cell(row=row_idx, column=11, value=p.alternative_contact_number or "")
+            ws.cell(row=row_idx, column=12, value=p.city)
+            ws.cell(row=row_idx, column=13, value=p.pin_code)
+            ws.cell(row=row_idx, column=14, value=p.state)
           
             # Optional: Align all text left except IDs and dates
             for col in range(1, 16):
@@ -319,12 +321,7 @@ class AdminProfileExportExcelView(APIView):
         wb.save(response)
         return response          
 
-
-
-
-CASHFREE_APP_ID = settings.CASHFREE_APP_ID
-CASHFREE_SECRET_KEY = settings.CASHFREE_SECRET_KEY
-CASHFREE_API_URL = "https://test.cashfree.com/api/v2/cftoken/order"  # Test environment
+ 
 def cf_headers():
   return {
     "x-client-id": settings.CASHFREE_APP_ID,
@@ -338,21 +335,23 @@ class CashfreeCreateOrderView(APIView):
 
     def post(self, request):
         user = request.user
-        profile = getattr(user, "profile", None)
+        profile = getattr(user, "profile", None) 
+        
         if not profile:
             return Response({"error": "Profile not found"}, status=status.HTTP_400_BAD_REQUEST)
 
         amount = 100  # INR as requested
-        order_id = f"order_{uuid.uuid4().hex[:16]}"
+        order_id = f"order_{uuid.uuid4().hex[:16]}" 
+        registration=Registration.objects.get(user=user)
 
         payload = {
             "order_id": order_id,
             "order_amount": float(amount),
             "order_currency": "INR",
             "customer_details": {
-                "customer_id": str(user.id),
+                "customer_id": str(registration.id),
                 "customer_name": profile.full_name or user.get_username(),
-                "customer_email": user.email or "example@gmail.com",
+                "customer_email":  "example@gmail.com",
                 "customer_phone": profile.contact_number or "9999999999",
             },
             "order_meta": {
@@ -382,20 +381,7 @@ class CashfreeCreateOrderView(APIView):
 class CashfreePaymentStatusView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request,order_id):
-       
-        if not order_id:
-            return Response({"error": "Missing order_id query parameter"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Call Cashfree API to fetch payment status for the order
-        url = f"{settings.CASHFREE_PG_BASE}/orders/{order_id}/payments"
-        
-        headers = {
-            "x-client-id": settings.CASHFREE_APP_ID,
-            "x-client-secret": settings.CASHFREE_SECRET_KEY,
-            "x-api-version": settings.CASHFREE_API_VERSION,
-            "Content-Type": "application/json",
-        }
+    
 
     def get(self, request, order_id):
         if not order_id:
@@ -449,7 +435,7 @@ class CashfreePaymentWebhookView(APIView):
         signature = data.get("signature")
 
         try:
-            registration = Registration.objects.get(id__exact=order_id.split("CFO")[1])  # Extract user.id part
+            registration = Registration.objects.get(id__exact=order_id.split("CFO")[1])  
         except Registration.DoesNotExist:
             return Response({"error": "Registration not found"}, status=400)
 
@@ -465,7 +451,9 @@ class CashfreePaymentWebhookView(APIView):
                 signature=signature,
                 raw_payload=data,
                 webhook_received_at=timezone.now()
-            )
+            ) 
+            registration.status='paid' 
+            registration.save()
             return Response({"status": "success"})
         else:
             Payment.objects.create(

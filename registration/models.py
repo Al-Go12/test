@@ -21,7 +21,10 @@ class Profile(models.Model):
     alternative_contact_number=models.CharField(max_length=10,blank=True,null=True)
     city = models.CharField(max_length=100)
     pin_code = models.CharField(max_length=6) 
-    state = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)   
+
+    loan_type=models.CharField(max_length=100,blank=True,null=True) 
+    loan_amount=models.CharField(max_length=7,blank=True,null=True) 
 
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)  
